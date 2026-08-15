@@ -1,6 +1,7 @@
 import os
 import base64
 import requests
+import json
 
 class Client:
     def __init__(self, region: str="kr"):
@@ -79,7 +80,6 @@ class Client:
     def fetch(self, endpoint, endpoint_type) -> dict:
         if endpoint_type == "local":
             response = requests.get(f"https://127.0.0.1:{self.port}{endpoint}", headers=self.local_headers, verify=False)
-            return response.json()
         elif endpoint_type in ["pd", "glz", "shared"]:
             if endpoint_type == "glz":
                 url = self.base_url_glz
@@ -88,6 +88,20 @@ class Client:
             else:
                 url = self.base_url
             response = requests.get(f'{url}{endpoint}', headers=self.remote_headers)
-            return response.json()
         else:
             raise ValueError("wrong endpoint_type")
+
+        response.raise_for_status()
+        return response.json()
+
+    def post(self, endpoint, endpoint_type, json_data={}) -> dict:
+        url = self.base_url_glz if endpoint_type == "glz" else self.base_url
+        response = requests.post(f"{url}{endpoint}", headers=self.remote_headers, json=json_data)
+        response.raise_for_status()
+        return response.json()
+
+    def put(self, endpoint, endpoint_type, json_data={}) -> dict:
+        url = self.base_url_glz if endpoint_type == "glz" else self.base_url
+        response = requests.put(f"{url}{endpoint}", headers=self.remote_headers, json=json_data)
+        response.raise_for_status()
+        return response.json()
