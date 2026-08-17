@@ -24,6 +24,9 @@ class ValorantAPI:
         except:
             return None
 
-    def select_agent(self, match_id: str, agent_id: Agent):
-        self.client.post(endpoint=f"/pregame/v1/matches/{match_id}/lock/{agent_id}", endpoint_type="glz")
+    def select_agent(self, match_id: str, agent: Agent):
+        self.client.post(endpoint=f"/pregame/v1/matches/{match_id}/select/{agent.uuid}", endpoint_type="glz")
+
+    def lock_agent(self, match_id: str, agent: Agent):
+            self.client.post(endpoint=f"/pregame/v1/matches/{match_id}/lock/{agent.uuid}", endpoint_type="glz")
         
