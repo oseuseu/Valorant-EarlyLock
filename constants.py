@@ -1,5 +1,10 @@
 from enum import Enum
 
+class GameState(Enum):
+    LOBBY = "lobby"
+    PREGAME = "pregame"
+    IN_GAME = "in_game"
+
 class Agent(Enum):
     GEKKO = ("게코", "e370fa57-4757-3604-3648-499e1f642d3f")
     FADE = ("페이드", "dade69b4-4f5a-8528-247b-219e5a1facd6")
