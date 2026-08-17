@@ -17,78 +17,78 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
     QHBoxLayout, QListWidget, QListWidgetItem, QPushButton,
-    QSizePolicy, QTextBrowser, QWidget)
+    QSizePolicy, QTextBrowser, QVBoxLayout, QWidget)
 
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
         if not Dialog.objectName():
             Dialog.setObjectName(u"Dialog")
         Dialog.resize(400, 600)
-        self.horizontalLayoutWidget = QWidget(Dialog)
-        self.horizontalLayoutWidget.setObjectName(u"horizontalLayoutWidget")
-        self.horizontalLayoutWidget.setGeometry(QRect(20, 10, 361, 41))
-        self.horizontalLayout = QHBoxLayout(self.horizontalLayoutWidget)
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(Dialog.sizePolicy().hasHeightForWidth())
+        Dialog.setSizePolicy(sizePolicy)
+        self.verticalLayout = QVBoxLayout(Dialog)
+        self.verticalLayout.setObjectName(u"verticalLayout")
+        self.horizontalLayout = QHBoxLayout()
         self.horizontalLayout.setSpacing(10)
         self.horizontalLayout.setObjectName(u"horizontalLayout")
-        self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
-        self.selectedAgent = QComboBox(self.horizontalLayoutWidget)
+        self.horizontalLayout.setContentsMargins(0, -1, -1, -1)
+        self.selectedAgent = QComboBox(Dialog)
         self.selectedAgent.setObjectName(u"selectedAgent")
 
         self.horizontalLayout.addWidget(self.selectedAgent)
 
-        self.startToggleButton = QPushButton(self.horizontalLayoutWidget)
+        self.startToggleButton = QPushButton(Dialog)
         self.startToggleButton.setObjectName(u"startToggleButton")
 
         self.horizontalLayout.addWidget(self.startToggleButton)
 
-        self.quitButton = QPushButton(self.horizontalLayoutWidget)
+        self.quitButton = QPushButton(Dialog)
         self.quitButton.setObjectName(u"quitButton")
 
         self.horizontalLayout.addWidget(self.quitButton)
 
-        self.horizontalLayoutWidget_2 = QWidget(Dialog)
-        self.horizontalLayoutWidget_2.setObjectName(u"horizontalLayoutWidget_2")
-        self.horizontalLayoutWidget_2.setGeometry(QRect(20, 110, 361, 141))
-        self.horizontalLayout_2 = QHBoxLayout(self.horizontalLayoutWidget_2)
-        self.horizontalLayout_2.setSpacing(12)
-        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
-        self.horizontalLayout_2.setContentsMargins(0, 0, 0, 0)
-        self.teamList = QListWidget(self.horizontalLayoutWidget_2)
-        __qlistwidgetitem = QListWidgetItem(self.teamList)
-        __qlistwidgetitem.setTextAlignment(Qt.AlignLeading|Qt.AlignVCenter)
-        QListWidgetItem(self.teamList)
-        QListWidgetItem(self.teamList)
-        QListWidgetItem(self.teamList)
-        QListWidgetItem(self.teamList)
-        self.teamList.setObjectName(u"teamList")
-        font = QFont()
-        font.setPointSize(10)
-        font.setBold(True)
-        self.teamList.setFont(font)
 
-        self.horizontalLayout_2.addWidget(self.teamList)
-
-        self.enemyList = QListWidget(self.horizontalLayoutWidget_2)
-        __qlistwidgetitem1 = QListWidgetItem(self.enemyList)
-        __qlistwidgetitem1.setTextAlignment(Qt.AlignLeading|Qt.AlignVCenter)
-        QListWidgetItem(self.enemyList)
-        QListWidgetItem(self.enemyList)
-        QListWidgetItem(self.enemyList)
-        QListWidgetItem(self.enemyList)
-        self.enemyList.setObjectName(u"enemyList")
-        self.enemyList.setFont(font)
-
-        self.horizontalLayout_2.addWidget(self.enemyList)
+        self.verticalLayout.addLayout(self.horizontalLayout)
 
         self.pickOnlyCheckBox = QCheckBox(Dialog)
         self.pickOnlyCheckBox.setObjectName(u"pickOnlyCheckBox")
-        self.pickOnlyCheckBox.setGeometry(QRect(20, 60, 81, 16))
+        font = QFont()
+        font.setPointSize(9)
+        self.pickOnlyCheckBox.setFont(font)
+
+        self.verticalLayout.addWidget(self.pickOnlyCheckBox)
+
+        self.horizontalLayout_2 = QHBoxLayout()
+        self.horizontalLayout_2.setSpacing(12)
+        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
+        self.teamList = QListWidget(Dialog)
+        self.teamList.setObjectName(u"teamList")
         font1 = QFont()
-        font1.setPointSize(9)
-        self.pickOnlyCheckBox.setFont(font1)
+        font1.setPointSize(10)
+        font1.setBold(True)
+        self.teamList.setFont(font1)
+
+        self.horizontalLayout_2.addWidget(self.teamList)
+
+        self.enemyList = QListWidget(Dialog)
+        self.enemyList.setObjectName(u"enemyList")
+        self.enemyList.setFont(font1)
+
+        self.horizontalLayout_2.addWidget(self.enemyList)
+
+
+        self.verticalLayout.addLayout(self.horizontalLayout_2)
+
         self.logTextBrowser = QTextBrowser(Dialog)
         self.logTextBrowser.setObjectName(u"logTextBrowser")
-        self.logTextBrowser.setGeometry(QRect(20, 280, 361, 301))
+
+        self.verticalLayout.addWidget(self.logTextBrowser)
+
+        self.verticalLayout.setStretch(2, 1)
+        self.verticalLayout.setStretch(3, 1)
 
         self.retranslateUi(Dialog)
 
@@ -96,10 +96,9 @@ class Ui_Dialog(object):
     # setupUi
 
     def retranslateUi(self, Dialog):
-        Dialog.setWindowTitle(QCoreApplication.translate("Dialog", "Early Pick", None))
-        self.startToggleButton.setText(QCoreApplication.translate("Dialog", "시작/종료", None))
-        self.quitButton.setText(QCoreApplication.translate("Dialog", "게임 나가기", None))
-
-        self.pickOnlyCheckBox.setText(QCoreApplication.translate("Dialog", "pick only", None))
+        Dialog.setWindowTitle(QCoreApplication.translate("Dialog", u"EarlyPick", None))
+        self.startToggleButton.setText(QCoreApplication.translate("Dialog", u"\uc2dc\uc791/\uc885\ub8cc", None))
+        self.quitButton.setText(QCoreApplication.translate("Dialog", u"\uac8c\uc784 \ub098\uac00\uae30", None))
+        self.pickOnlyCheckBox.setText(QCoreApplication.translate("Dialog", u"pick only", None))
     # retranslateUi
 
