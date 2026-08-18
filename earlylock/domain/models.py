@@ -1,4 +1,6 @@
+from dataclasses import dataclass
 from enum import Enum
+
 
 class GameState(Enum):
     LOBBY = "lobby"
@@ -39,3 +41,10 @@ class Agent(Enum):
     def __init__(self, display_name: str, uuid: str):
         self.display_name = display_name
         self.uuid = uuid
+
+
+@dataclass(frozen=True)
+class AutoPickSettings:
+    agent: Agent
+    pick_only: bool
+    pick_delay_seconds: float = 6.0
