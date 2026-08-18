@@ -80,5 +80,25 @@ class ValorantApi:
         except HTTPError:
             return False
 
+    def quit_pregame(self, match_id: str) -> bool:
+        try:
+            self._client.post(
+                f"/pregame/v1/matches/{match_id}/quit",
+                EndpointType.GLZ
+            )
+            return True
+        except:
+            return False
+
+    def quit_coregame(self, match_id: str) -> bool:
+        try:
+            self._client.post(
+                f"/core-game/v1/players/{self._client.puuid}/disassociate/{match_id}",
+                EndpointType.GLZ
+            )
+            return True
+        except:
+            return False
+
     def close(self) -> None:
         self._client.close()
