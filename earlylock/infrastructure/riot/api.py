@@ -1,9 +1,16 @@
+from collections.abc import Iterable
 from typing import Any
 
 from requests import HTTPError
 
-from earlylock.domain.models import Agent, GameState
+from earlylock.domain.models import Agent, GameState, MatchSnapshot, PlayerName
 from earlylock.infrastructure.riot.client import EndpointType, RiotClient
+from earlylock.infrastructure.riot.match_mapper import (
+    from_coregame,
+    from_pregame,
+    get_ally_player_ids,
+    get_coregame_player_ids,
+)
 
 
 class ValorantApi:
@@ -43,6 +50,37 @@ class ValorantApi:
     def get_pregame_match(self, match_id: str) -> dict[str, Any] | None:
         return self._fetch_optional(f"/pregame/v1/matches/{match_id}")
 
+    def get_player_names(self, puuids: Iterable[str]) -> dict[str, PlayerName]:
+        unique_puuids = list(dict.fromkeys(puuid for puuid in puuids if puuid))
+        if not unique_puuids:
+            return {}
+
+        payload = self._client.put(
+            "/name-service/v2/players",
+            EndpointType.PD,
+            json_data=unique_puuids,
+        )
+        if not isinstance(payload, list):
+            raise TypeError("Name Service 응답이 JSON array 형식이 아닙니다.")
+
+        names: dict[str, PlayerName] = {}
+        for player in payload:
+            puuid = player.get("Subject")
+            name = player.get("GameName")
+            tag = player.get("TagLine")
+            if not all(isinstance(value, str) for value in (puuid, name, tag)):
+                continue
+            names[puuid] = PlayerName(puuid=puuid, name=name, tag=tag)
+        return names
+
+    def get_pregame_snapshot(self, match_id: str) -> MatchSnapshot | None:
+        payload = self.get_pregame_match(match_id)
+        if payload is None:
+            return None
+
+        player_names = self.get_player_names(get_ally_player_ids(payload))
+        return from_pregame(payload, player_names)
+
     def get_coregame_player(self) -> dict[str, Any] | None:
         return self._fetch_optional(f"/core-game/v1/players/{self._client.puuid}")
 
@@ -52,6 +90,14 @@ class ValorantApi:
 
     def get_coregame_match(self, match_id: str) -> dict[str, Any] | None:
         return self._fetch_optional(f"/core-game/v1/matches/{match_id}")
+
+    def get_coregame_snapshot(self, match_id: str) -> MatchSnapshot | None:
+        payload = self.get_coregame_match(match_id)
+        if payload is None:
+            return None
+
+        player_names = self.get_player_names(get_coregame_player_ids(payload))
+        return from_coregame(payload, player_names)
 
     def get_game_state(self) -> GameState:
         if self.get_pregame_player() is not None:

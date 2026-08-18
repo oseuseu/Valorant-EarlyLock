@@ -1,3 +1,17 @@
-from earlylock.domain.models import Agent, AutoPickSettings, GameState
+from earlylock.domain.models import (
+    Agent,
+    AutoPickSettings,
+    GameState,
+    MatchSnapshot,
+    PlayerName,
+    PlayerSnapshot,
+)
 
-__all__ = ["Agent", "AutoPickSettings", "GameState"]
+__all__ = [
+    "Agent",
+    "AutoPickSettings",
+    "GameState",
+    "MatchSnapshot",
+    "PlayerName",
+    "PlayerSnapshot",
+]

@@ -105,8 +105,8 @@ class RiotClient:
         method: str,
         endpoint: str,
         endpoint_type: EndpointType,
-        json_data: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
+        json_data: dict[str, Any] | list[str] | None = None,
+    ) -> Any:
         try:
             endpoint_type = EndpointType(endpoint_type)
         except ValueError as error:
@@ -129,7 +129,10 @@ class RiotClient:
         endpoint: str,
         endpoint_type: EndpointType,
     ) -> dict[str, Any]:
-        return self._request("GET", endpoint, endpoint_type)
+        payload = self._request("GET", endpoint, endpoint_type)
+        if not isinstance(payload, dict):
+            raise TypeError("GET 응답이 JSON object 형식이 아닙니다.")
+        return payload
 
     def post(
         self,
@@ -137,14 +140,17 @@ class RiotClient:
         endpoint_type: EndpointType,
         json_data: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        return self._request("POST", endpoint, endpoint_type, json_data)
+        payload = self._request("POST", endpoint, endpoint_type, json_data)
+        if not isinstance(payload, dict):
+            raise TypeError("POST 응답이 JSON object 형식이 아닙니다.")
+        return payload
 
     def put(
         self,
         endpoint: str,
         endpoint_type: EndpointType,
-        json_data: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
+        json_data: dict[str, Any] | list[str] | None = None,
+    ) -> dict[str, Any] | list[dict[str, Any]]:
         return self._request("PUT", endpoint, endpoint_type, json_data)
 
     def close(self) -> None:
