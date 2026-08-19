@@ -2,10 +2,11 @@ from collections.abc import Callable
 from datetime import datetime
 
 from PySide6.QtGui import QCloseEvent
-from PySide6.QtWidgets import QDialog, QWidget
+from PySide6.QtWidgets import QDialog, QTextBrowser, QWidget
 
 from earlylock.application.auto_pick import AutoPickService
 from earlylock.domain.models import Agent, AutoPickSettings
+from earlylock.infrastructure.riot.tracker import GameTracker, Player
 from earlylock.presentation.qt.generated.ui_main_dialog import Ui_Dialog
 from earlylock.presentation.qt.workers import AutoPickWorker
 
@@ -39,6 +40,7 @@ class MainDialog(QDialog):
 
             self.worker = AutoPickWorker(self._service_factory, self)
             self.worker.log_message.connect(self.append_log)
+            self.worker.game_tracker_updated.connect(self.update_player_text_boxes)
             self.worker.settings_requested.connect(self.provide_current_settings)
             self.worker.finished.connect(self.on_worker_finished)
             self.worker.start()
@@ -89,3 +91,43 @@ class MainDialog(QDialog):
     def append_log(self, message: str) -> None:
         timestamp = datetime.now().strftime("%H:%M:%S")
         self.ui.logTextBrowser.append(f"[{timestamp}] {message}")
+
+    def update_player_text_boxes(self, tracker: GameTracker) -> None:
+        allies, enemies = player_display_texts(tracker)
+        _replace_text(self.ui.teamTextBox, allies)
+        _replace_text(self.ui.enemyTextBox, enemies)
+
+
+def player_display_texts(tracker: GameTracker) -> tuple[str, str]:
+    allies = "\n".join(
+        _format_player(player) for player in tracker.get_players("Ally")
+    )
+    enemies = "\n".join(
+        _format_player(player) for player in tracker.get_players("Enemy")
+    )
+    return allies, enemies
+
+
+def _format_player(player: Player) -> str:
+    if player.agent is None:
+        agent = "미선택"
+    elif player.is_lock:
+        agent = player.agent.display_name
+    else:
+        agent = f"{player.agent.display_name}?"
+
+    if player.name is None:
+        identity = "가림"
+    elif player.tag is None:
+        identity = player.name
+    else:
+        identity = f"{player.name}:{player.tag}"
+
+    return f"{agent}: {identity}"
+
+
+def _replace_text(widget: QTextBrowser, text: str) -> None:
+    if widget.toPlainText() == text:
+        return
+
+    widget.setPlainText(text)

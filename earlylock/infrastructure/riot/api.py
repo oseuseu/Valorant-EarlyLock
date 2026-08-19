@@ -3,14 +3,8 @@ from typing import Any
 
 from requests import HTTPError
 
-from earlylock.domain.models import Agent, GameState, MatchSnapshot, PlayerName
+from earlylock.domain.models import Agent, PlayerName
 from earlylock.infrastructure.riot.client import EndpointType, RiotClient
-from earlylock.infrastructure.riot.match_mapper import (
-    from_coregame,
-    from_pregame,
-    get_ally_player_ids,
-    get_coregame_player_ids,
-)
 
 
 class ValorantApi:
@@ -26,6 +20,10 @@ class ValorantApi:
     @property
     def player_tag(self) -> str:
         return self._client.player_tag
+
+    @property
+    def player_puuid(self) -> str:
+        return self._client.puuid
 
     def _fetch_optional(self, endpoint: str) -> dict[str, Any] | None:
         try:
@@ -66,20 +64,12 @@ class ValorantApi:
         names: dict[str, PlayerName] = {}
         for player in payload:
             puuid = player.get("Subject")
-            name = player.get("GameName")
-            tag = player.get("TagLine")
-            if not all(isinstance(value, str) for value in (puuid, name, tag)):
+            if not isinstance(puuid, str) or not puuid:
                 continue
-            names[puuid] = PlayerName(puuid=puuid, name=name, tag=tag)
+            name = player.get("GameName") or None
+            tag = player.get("TagLine") or None
+            names[puuid] = PlayerName(name=name, tag=tag)
         return names
-
-    def get_pregame_snapshot(self, match_id: str) -> MatchSnapshot | None:
-        payload = self.get_pregame_match(match_id)
-        if payload is None:
-            return None
-
-        player_names = self.get_player_names(get_ally_player_ids(payload))
-        return from_pregame(payload, player_names)
 
     def get_coregame_player(self) -> dict[str, Any] | None:
         return self._fetch_optional(f"/core-game/v1/players/{self._client.puuid}")
@@ -90,21 +80,6 @@ class ValorantApi:
 
     def get_coregame_match(self, match_id: str) -> dict[str, Any] | None:
         return self._fetch_optional(f"/core-game/v1/matches/{match_id}")
-
-    def get_coregame_snapshot(self, match_id: str) -> MatchSnapshot | None:
-        payload = self.get_coregame_match(match_id)
-        if payload is None:
-            return None
-
-        player_names = self.get_player_names(get_coregame_player_ids(payload))
-        return from_coregame(payload, player_names)
-
-    def get_game_state(self) -> GameState:
-        if self.get_pregame_player() is not None:
-            return GameState.PREGAME
-        if self.get_coregame_player() is not None:
-            return GameState.IN_GAME
-        return GameState.LOBBY
 
     def select_agent(self, match_id: str, agent: Agent) -> bool:
         try:

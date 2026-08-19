@@ -12,9 +12,6 @@ dependencies = [
     "requests>=2.32,<3",
 ]
 
-[project.optional-dependencies]
-dev = ["pytest>=8,<9"]
-
 [project.scripts]
 earlylock = "earlylock.app:main"
 
@@ -23,7 +20,3 @@ include = ["earlylock*"]
 
 [tool.setuptools.package-data]
 "earlylock.presentation.qt" = ["forms/*.ui"]
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-addopts = "-q"

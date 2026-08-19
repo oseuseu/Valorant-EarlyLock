@@ -16,8 +16,8 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
-    QHBoxLayout, QListWidget, QListWidgetItem, QPushButton,
-    QSizePolicy, QTextBrowser, QVBoxLayout, QWidget)
+    QHBoxLayout, QPushButton, QSizePolicy, QTextBrowser,
+    QVBoxLayout, QWidget)
 
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
@@ -64,20 +64,20 @@ class Ui_Dialog(object):
         self.horizontalLayout_2 = QHBoxLayout()
         self.horizontalLayout_2.setSpacing(12)
         self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
-        self.teamList = QListWidget(Dialog)
-        self.teamList.setObjectName(u"teamList")
+        self.teamTextBox = QTextBrowser(Dialog)
+        self.teamTextBox.setObjectName(u"teamTextBox")
         font1 = QFont()
         font1.setPointSize(10)
         font1.setBold(True)
-        self.teamList.setFont(font1)
+        self.teamTextBox.setFont(font1)
 
-        self.horizontalLayout_2.addWidget(self.teamList)
+        self.horizontalLayout_2.addWidget(self.teamTextBox)
 
-        self.enemyList = QListWidget(Dialog)
-        self.enemyList.setObjectName(u"enemyList")
-        self.enemyList.setFont(font1)
+        self.enemyTextBox = QTextBrowser(Dialog)
+        self.enemyTextBox.setObjectName(u"enemyTextBox")
+        self.enemyTextBox.setFont(font1)
 
-        self.horizontalLayout_2.addWidget(self.enemyList)
+        self.horizontalLayout_2.addWidget(self.enemyTextBox)
 
 
         self.verticalLayout.addLayout(self.horizontalLayout_2)

@@ -65,7 +65,7 @@
       <number>12</number>
      </property>
      <item>
-      <widget class="QListWidget" name="teamList">
+      <widget class="QTextBrowser" name="teamTextBox">
        <property name="font">
         <font>
          <pointsize>10</pointsize>
@@ -76,7 +76,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QListWidget" name="enemyList">
+      <widget class="QTextBrowser" name="enemyTextBox">
        <property name="font">
         <font>
          <pointsize>10</pointsize>

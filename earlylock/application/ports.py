@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from earlylock.domain.models import Agent, GameState
+from earlylock.domain.models import Agent
 
 
 class ValorantGateway(Protocol):
@@ -9,10 +9,6 @@ class ValorantGateway(Protocol):
 
     @property
     def player_tag(self) -> str: ...
-
-    def get_game_state(self) -> GameState: ...
-
-    def get_pregame_id(self) -> str | None: ...
 
     def select_agent(self, match_id: str, agent: Agent) -> bool: ...
 

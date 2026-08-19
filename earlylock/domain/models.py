@@ -52,28 +52,5 @@ class AutoPickSettings:
 
 @dataclass(frozen=True)
 class PlayerName:
-    puuid: str
-    name: str
-    tag: str
-
-
-@dataclass(frozen=True)
-class PlayerSnapshot:
-    puuid: str
     name: str | None
     tag: str | None
-
-    team: str | None
-    agent: Agent | None
-    is_lock: bool = False
-
-
-@dataclass(frozen=True)
-class MatchSnapshot:
-    state: GameState
-    match_id: str | None
-    players: tuple[PlayerSnapshot, ...]
-
-    @property
-    def is_active(self) -> bool:
-        return self.match_id is not None

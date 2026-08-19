@@ -2,17 +2,18 @@ import sys
 from collections.abc import Sequence
 
 from PySide6.QtWidgets import QApplication
-
 from earlylock.application.auto_pick import AutoPickService
 from earlylock.infrastructure.riot.api import ValorantApi
 from earlylock.infrastructure.riot.client import RiotClient
+from earlylock.infrastructure.riot.tracker import GameTracker
 from earlylock.presentation.qt.main_dialog import MainDialog
 
 
 def build_auto_pick_service() -> AutoPickService:
     client = RiotClient()
     gateway = ValorantApi(client)
-    return AutoPickService(gateway)
+    tracker = GameTracker(gateway)
+    return AutoPickService(gateway, tracker)
 
 
 def main(argv: Sequence[str] | None = None) -> int:

@@ -17,19 +17,12 @@ python -m earlylock
 python main.py
 ```
 
-## 테스트
-
-```powershell
-python -m unittest discover -s tests -v
-```
-
 ## 구조
 
 - `earlylock/domain`: 게임 상태, 요원, 자동 픽 설정
 - `earlylock/application`: 자동 픽 유스케이스와 외부 API 규격
-- `earlylock/infrastructure/riot`: lockfile, 인증, HTTP 및 VALORANT API
+- `earlylock/infrastructure/riot`: lockfile, 인증, VALORANT API 및 게임 추적
 - `earlylock/presentation/qt`: Qt 화면과 Worker
-- `tests`: 외부 네트워크를 사용하지 않는 단위 테스트
 
 Qt Designer 파일을 수정한 후 생성 코드는 다음 명령으로 갱신합니다.
 
