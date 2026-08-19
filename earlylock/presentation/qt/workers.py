@@ -14,7 +14,7 @@ class AutoPickWorker(QThread):
     game_tracker_updated = Signal(object)
     settings_requested = Signal()
 
-    POLL_INTERVAL_SECONDS = 1.0
+    POLL_INTERVAL_SECONDS = 1.5
 
     def __init__(
         self,
@@ -70,6 +70,7 @@ class AutoPickWorker(QThread):
     def _monitor(self, service: AutoPickService) -> None:
         while not self._stop_event.is_set():
             observation = service.poll_game_state()
+            print(observation.state.value)
             self.game_tracker_updated.emit(observation.tracker)
 
             if observation.pregame_started:
