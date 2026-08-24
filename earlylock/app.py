@@ -7,12 +7,16 @@ from earlylock.infrastructure.riot.api import ValorantApi
 from earlylock.infrastructure.riot.client import RiotClient
 from earlylock.infrastructure.riot.tracker import GameTracker
 from earlylock.presentation.qt.main_dialog import MainDialog
+from earlylock.application.name_resolver import PlayerNameResolver
+from earlylock.infrastructure.database.name_database import PlayerNameDatabase
 
 
 def build_auto_pick_service() -> AutoPickService:
     client = RiotClient()
     gateway = ValorantApi(client)
-    tracker = GameTracker(gateway)
+    database = PlayerNameDatabase()
+    resolver = PlayerNameResolver(gateway, database)
+    tracker = GameTracker(gateway, resolver)
     return AutoPickService(gateway, tracker)
 
 

@@ -3,6 +3,7 @@ from typing import Any, Literal, Self
 
 from earlylock.domain.models import Agent, GameState, PlayerName
 from earlylock.infrastructure.riot.api import ValorantApi
+from earlylock.application.name_resolver import PlayerNameResolver
 
 Team = Literal["Ally", "Enemy"]
 
@@ -19,8 +20,9 @@ class Player:
 
 
 class GameTracker:
-    def __init__(self, api: ValorantApi) -> None:
+    def __init__(self, api: ValorantApi, resolver: PlayerNameResolver) -> None:
         self._api = api
+        self._resolver = resolver
         self._game_state = GameState.LOBBY
         self._match_id: str | None = None
         self._players: dict[Team, list[Player]] = {
@@ -104,7 +106,7 @@ class GameTracker:
             for player in players
             if isinstance(player, dict)
         )
-        names = self._api.get_player_names(puuids)
+        names = self._resolver.resolve_many(puuids)
 
         ally_players = self._get_players(ally_team, names, "Ally")
 
@@ -131,7 +133,7 @@ class GameTracker:
             for player in players
             if isinstance(player, dict)
         )
-        names = self._api.get_player_names(puuids)
+        names = self._resolver.resolve_many(puuids)
 
         ally_players = self._get_players(ally_team, names, "Ally")
         enemy_players = self._get_players(enemy_team, names, "Enemy")
@@ -153,15 +155,16 @@ class GameTracker:
             return ally_team, enemy_team
 
         players = payload.get("Players") or []
-        current_player = next(
-            (
-                player
-                for player in players
-                if isinstance(player, dict)
-                and player.get("Subject") == self._api.player_puuid
-            ),
-            None,
-        )
+
+        current_player = None
+        for player in players:
+            if not isinstance(player, dict):
+                continue
+            if player.get("Subject") != self._api.player_puuid:
+                continue
+            current_player = player
+            break
+        
         ally_team_id = current_player.get("TeamID") if current_player else None
         if ally_team_id is None:
             return {"Players": players}, {"Players": []}
