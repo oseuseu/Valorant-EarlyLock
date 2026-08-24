@@ -65,7 +65,7 @@ class PlayerNameDatabase:
         if not isinstance(entry, dict):
             return None
 
-        return PlayerName(id=key, name=entry.get("gameName"), tag=entry.get("tagLine"))
+        return PlayerName(id=player_id, name=entry.get("gameName"), tag=entry.get("tagLine"))
 
     def upsert_player_name(
         self,
