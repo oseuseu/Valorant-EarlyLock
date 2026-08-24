@@ -68,7 +68,7 @@ class ValorantApi:
                 continue
             name = player.get("GameName") or None
             tag = player.get("TagLine") or None
-            names[puuid] = PlayerName(name=name, tag=tag)
+            names[puuid] = PlayerName(id=puuid, name=name, tag=tag)
         return names
 
     def get_coregame_player(self) -> dict[str, Any] | None:

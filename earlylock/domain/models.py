@@ -52,5 +52,6 @@ class AutoPickSettings:
 
 @dataclass(frozen=True)
 class PlayerName:
+    id: str
     name: str | None
     tag: str | None
