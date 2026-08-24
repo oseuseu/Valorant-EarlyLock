@@ -1,0 +1,102 @@
+import json
+import shutil
+import sys
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+from earlylock.domain.models import PlayerName
+
+
+def get_application_directory() -> Path:
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent / "data"
+    return Path(__file__).resolve().parents[2] / "data"
+
+
+DEFAULT_DATABASE_PATH = get_application_directory() / "player_name_database.json"
+
+class PlayerNameDatabase:
+    def __init__(self, path: Path = DEFAULT_DATABASE_PATH):
+        self.path = Path(path)
+        self.database: dict[str, dict[str, Any]] = {}
+        self.load_player_name_database()
+
+    def load_player_name_database(self) -> dict[str, dict[str, Any]]:
+        if not self.path.exists():
+            self.database = {}
+            self.save_player_name_database(self.database)
+            return self.database
+
+        try:
+            raw_text = self.path.read_text(encoding="utf-8").strip()
+            if not raw_text:
+                self.database = {}
+                self.save_player_name_database(self.database)
+                return self.database
+
+            loaded = json.loads(raw_text)
+            self.database = loaded if isinstance(loaded, dict) else {}
+            if not isinstance(loaded, dict):
+                self.save_player_name_database(self.database)
+        except (OSError, json.JSONDecodeError):
+            self.backup_corrupted_database_file()
+            self.database = {}
+            self.save_player_name_database(self.database)
+
+        return self.database
+
+    def save_player_name_database(
+        self,
+        database: dict[str, dict[str, Any]] | None = None,
+    ):
+        if database is not None:
+            self.database = database
+
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        temp_path = self.path.with_suffix(self.path.suffix + ".tmp")
+        temp_path.write_text(
+            json.dumps(self.database, ensure_ascii=False, indent=2, sort_keys=True),
+            encoding="utf-8",
+        )
+        temp_path.replace(self.path)
+
+    def get_player_name_from_database(self, player_id: str) -> PlayerName | None:
+        entry = self.database.get(player_id)
+        if not isinstance(entry, dict):
+            return None
+
+        return PlayerName(id=key, name=entry.get("gameName"), tag=entry.get("tagLine"))
+
+    def upsert_player_name(
+        self,
+        player_name: PlayerName
+    ) -> bool:
+        if not player_name.name or not player_name.tag:
+            return False
+
+        key = player_name.id
+        
+        current = self.database.get(key, {})
+        if not isinstance(current, dict):
+            current = {}
+
+        updated = {
+            **current,
+            "gameName": player_name.name,
+            "tagLine": player_name.tag
+        }
+        self.database[key] = updated
+        self.save_player_name_database()
+        return True
+
+    def backup_corrupted_database_file(self) -> Path | None:
+        if not self.path.exists():
+            return None
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_path = self.path.with_name(f"{self.path.stem}.corrupted.{timestamp}.bak")
+        try:
+            shutil.copy2(self.path, backup_path)
+            return backup_path
+        except OSError:
+            return None
