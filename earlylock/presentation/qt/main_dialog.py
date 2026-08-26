@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from datetime import datetime
 
-from PySide6.QtGui import QCloseEvent
+from PySide6.QtGui import QCloseEvent, QFont, QFontDatabase
 from PySide6.QtWidgets import QDialog, QTextBrowser, QWidget
 
 from earlylock.application.auto_pick import AutoPickService
@@ -22,6 +22,17 @@ class MainDialog(QDialog):
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
+
+        font_id = QFontDatabase.addApplicationFont(
+            "earlylock/assets/fonts/SarasaMonoK-Regular.ttf"
+        )
+        if font_id == -1:
+            raise RuntimeError("폰트 로드 실패")
+
+        font_family = QFontDatabase.applicationFontFamilies(font_id)[0]
+        font = QFont(font_family, 10)
+        self.ui.teamTextBox.setFont(font)
+        self.ui.enemyTextBox.setFont(font)
 
         for agent in Agent:
             self.ui.selectedAgent.addItem(agent.display_name, agent)
@@ -114,16 +125,16 @@ def _format_player(player: Player) -> str:
     elif player.is_lock:
         agent = player.agent.display_name
     else:
-        agent = f"{player.agent.display_name}?"
+        agent = f"-{player.agent.display_name}"
 
     if player.name is None:
         identity = "가림"
     elif player.tag is None:
         identity = player.name
     else:
-        identity = f"{player.name}:{player.tag}"
+        identity = f"{player.name}#{player.tag}"
 
-    return f"{agent}: {identity}"
+    return f"{agent:<5}: {identity}"
 
 
 def _replace_text(widget: QTextBrowser, text: str) -> None:

@@ -66,16 +66,11 @@ class Ui_Dialog(object):
         self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
         self.teamTextBox = QTextBrowser(Dialog)
         self.teamTextBox.setObjectName(u"teamTextBox")
-        font1 = QFont()
-        font1.setPointSize(10)
-        font1.setBold(True)
-        self.teamTextBox.setFont(font1)
 
         self.horizontalLayout_2.addWidget(self.teamTextBox)
 
         self.enemyTextBox = QTextBrowser(Dialog)
         self.enemyTextBox.setObjectName(u"enemyTextBox")
-        self.enemyTextBox.setFont(font1)
 
         self.horizontalLayout_2.addWidget(self.enemyTextBox)
 

@@ -70,7 +70,6 @@ class AutoPickWorker(QThread):
     def _monitor(self, service: AutoPickService) -> None:
         while not self._stop_event.is_set():
             observation = service.poll_game_state()
-            print(observation.state.value)
             self.game_tracker_updated.emit(observation.tracker)
 
             if observation.pregame_started:

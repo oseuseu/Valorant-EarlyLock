@@ -9,6 +9,9 @@ from earlylock.infrastructure.riot.tracker import GameTracker
 from earlylock.presentation.qt.main_dialog import MainDialog
 from earlylock.application.name_resolver import PlayerNameResolver
 from earlylock.infrastructure.database.name_database import PlayerNameDatabase
+from earlylock.infrastructure.riot.event_listener import EarlyPickGameEventListener
+
+from earlylock.infrastructure.riot.api import EndpointType
 
 
 def build_auto_pick_service() -> AutoPickService:
@@ -16,9 +19,9 @@ def build_auto_pick_service() -> AutoPickService:
     gateway = ValorantApi(client)
     database = PlayerNameDatabase()
     resolver = PlayerNameResolver(gateway, database)
-    tracker = GameTracker(gateway, resolver)
+    listener = EarlyPickGameEventListener(gateway, database)
+    tracker = GameTracker(api=gateway, resolver=resolver, listener=listener)
     return AutoPickService(gateway, tracker)
-
 
 def main(argv: Sequence[str] | None = None) -> int:
     app = QApplication(list(argv) if argv is not None else sys.argv)

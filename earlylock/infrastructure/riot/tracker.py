@@ -4,6 +4,7 @@ from typing import Any, Literal, Self
 from earlylock.domain.models import Agent, GameState, PlayerName
 from earlylock.infrastructure.riot.api import ValorantApi
 from earlylock.application.name_resolver import PlayerNameResolver
+from earlylock.infrastructure.riot.event_listener import GameEventListener
 
 Team = Literal["Ally", "Enemy"]
 
@@ -20,9 +21,10 @@ class Player:
 
 
 class GameTracker:
-    def __init__(self, api: ValorantApi, resolver: PlayerNameResolver) -> None:
+    def __init__(self, api: ValorantApi, resolver: PlayerNameResolver, listener: GameEventListener) -> None:
         self._api = api
         self._resolver = resolver
+        self._listener = listener
         self._game_state = GameState.LOBBY
         self._match_id: str | None = None
         self._players: dict[Team, list[Player]] = {
@@ -52,17 +54,16 @@ class GameTracker:
         match self._game_state:
             case GameState.LOBBY:
                 pregame_id = self._api.get_pregame_id()
-                if pregame_id is not None:
-                    pregame = self._api.get_pregame_match(pregame_id)
-                    if pregame is not None:
-                        self.update_from_pregame(pregame, pregame_id)
-                    return self
 
-                coregame_id = self._api.get_coregame_id()
-                if coregame_id is not None:
-                    coregame = self._api.get_coregame_match(coregame_id)
-                    if coregame is not None:
-                        self.update_from_coregame(coregame, coregame_id)
+                if pregame_id is None:
+                    return self
+                
+                pregame = self._api.get_pregame_match(pregame_id)
+
+                if pregame is not None:
+                    self.update_from_pregame(pregame, pregame_id)
+                    self._listener.on_pregame_start()
+
                 return self
 
             case GameState.PREGAME:
@@ -71,11 +72,14 @@ class GameTracker:
                     coregame = self._api.get_coregame_match(coregame_id)
                     if coregame is not None:
                         self.update_from_coregame(coregame, coregame_id)
+                        self._listener.on_coregame_start()
                     return self
 
                 pregame_id = self._api.get_pregame_id()
                 if pregame_id is None:
-                    return self.lobby()
+                    self.lobby()
+                    self._listener.on_pregame_cancel()
+                    return self
 
                 pregame = self._api.get_pregame_match(pregame_id)
                 if pregame is not None:
@@ -85,7 +89,10 @@ class GameTracker:
             case GameState.IN_GAME:
                 coregame_id = self._api.get_coregame_id()
                 if coregame_id is None:
-                    return self.lobby()
+                    ended_match_id = self._match_id
+                    self.lobby()
+                    self._listener.on_coregame_end(ended_match_id)
+                    return self
 
                 coregame = self._api.get_coregame_match(coregame_id)
                 if coregame is not None:

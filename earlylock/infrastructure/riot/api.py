@@ -121,5 +121,18 @@ class ValorantApi:
         except:
             return False
 
+    def get_match_details(self, match_id: str) -> dict[str, Any] | None:
+        try:
+            return self._client.fetch(f"/match-details/v1/matches/{match_id}", EndpointType.PD)
+        except HTTPError as error:
+            status_code = (
+                error.response.status_code
+                if error.response is not None
+                else None
+            )
+            if status_code in self.NOT_IN_GAME_STATUS_CODES:
+                return None
+            raise
+
     def close(self) -> None:
         self._client.close()

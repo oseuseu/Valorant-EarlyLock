@@ -68,9 +68,10 @@
       <widget class="QTextBrowser" name="teamTextBox">
        <property name="font">
         <font>
+         <family>Sarasa Mono K</family>
          <pointsize>10</pointsize>
-         <weight>75</weight>
-         <bold>true</bold>
+         <weight>50</weight>
+         <bold>false</bold>
         </font>
        </property>
       </widget>
@@ -79,9 +80,10 @@
       <widget class="QTextBrowser" name="enemyTextBox">
        <property name="font">
         <font>
+         <family>Sarasa Mono K</family>
          <pointsize>10</pointsize>
-         <weight>75</weight>
-         <bold>true</bold>
+         <weight>50</weight>
+         <bold>false</bold>
         </font>
        </property>
       </widget>
