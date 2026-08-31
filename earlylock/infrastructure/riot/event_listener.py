@@ -41,8 +41,6 @@ class EarlyPickGameEventListener:
         ...
 
     def on_coregame_end(self, match_id: str) -> None:
-        return None # todo: disabled
-
         threading.Thread(
             target=self._save_match_players, 
             args=(match_id,)
@@ -53,8 +51,10 @@ class EarlyPickGameEventListener:
         for i in range(10):
             match_detail = self._api.get_match_details(match_id)
             players = match_detail.get("players", [])
-            for player in players:
-                pass # todo
+            puuids = (player['subject'] for player in players)
+            names = self._api.get_player_names(puuids)
+            for name in names:
+                self._database.upsert_player_name(name)
             if match_detail:
                 save = True
                 break

@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any
 
 
 class GameState(Enum):
@@ -55,3 +56,67 @@ class PlayerName:
     id: str
     name: str | None
     tag: str | None
+
+class LivePlayerPayload:
+    def __init__(self, data: dict[str: Any]):
+        self._data = data
+
+    @property
+    def data(self) -> dict[str: Any]:
+        return self._data
+
+    @property
+    def puuid(self) -> str:
+        return self._data["Subject"]
+
+    @property
+    def character(self) -> Agent | None:
+        character_id = self._data.get("CharacterID")
+        if character_id:
+            return None
+        for agent in Agent:
+            if agent.uuid == character_id:
+                return agent
+        raise ValueError(f"Unknown agent UUID: {character_id}")
+
+    @property
+    def is_selected(self) -> bool:
+        selection_state = self._data["CharacterSelectionState"]
+        return bool(selection_state)    
+
+class PregameMatchPayload:
+    def __init__(self, data: dict[str: Any]):
+        self._data = data
+
+    @property
+    def data(self) -> dict[str: Any]:
+        return self._data
+
+    @property
+    def id(self) -> str:
+        return self._data["ID"]
+
+    @property
+    def ally_players(self) -> list[LivePlayerPayload]:
+        return (PregameMatchPayload(payload) for payload in self._data["AllyTeam"])
+
+
+class CoregameMatachPayload:
+    def __init__(self, data: dict[str: Any]):
+        self._data = data
+
+    @property
+    def data(self) -> dict[str: Any]:
+        return self._data
+
+    @property
+    def id(self) -> str:
+        return self._data["ID"]
+
+    @property
+    def ally_players(self) -> list[LivePlayerPayload]:
+        return (PregameMatchPayload(payload) for payload in self._data["AllyTeam"])
+
+    @property
+    def enemy_players(self) -> list[LivePlayerPayload]:
+        return (PregameMatchPayload(payload) for payload in self._data["EnemyTeam"])
