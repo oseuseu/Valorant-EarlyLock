@@ -120,3 +120,41 @@ class CoregameMatachPayload:
     @property
     def enemy_players(self) -> list[LivePlayerPayload]:
         return (PregameMatchPayload(payload) for payload in self._data["EnemyTeam"])
+
+class DetailedPlayerPayload:
+    def __init__(self, data: dict[str: Any]):
+        self._data = data
+
+    @property
+    def data(self) -> dict[str: Any]:
+        return self._data
+
+    @property
+    def puuid(self) -> str:
+        return self._data["Subject"]
+
+    @property
+    def character(self) -> Agent | None:
+        character_id = self._data.get("characterId")
+        if character_id:
+            return None
+        for agent in Agent:
+            if agent.uuid == character_id:
+                return agent
+        raise ValueError(f"Unknown agent UUID: {character_id}")
+
+class MatchDetailPayload:
+    def __init__(self, data: dict[str: Any]):
+        self._data = data
+
+    @property
+    def data(self) -> dict[str: Any]:
+        return self._data
+
+    @property
+    def id(self) -> str:
+        return self._data["matchInfo"]["matchId"]
+
+    @property
+    def players(self) -> list[DetailedPlayerPayload]:
+        return (DetailedPlayerPayload(payload) for payload in self._data["players"])
