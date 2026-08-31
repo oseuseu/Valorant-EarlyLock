@@ -19,4 +19,5 @@ earlylock = "earlylock.app:main"
 include = ["earlylock*"]
 
 [tool.setuptools.package-data]
+"earlylock" = ["assets/fonts/*.ttf"]
 "earlylock.presentation.qt" = ["forms/*.ui"]

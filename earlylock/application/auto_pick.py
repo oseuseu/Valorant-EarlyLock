@@ -1,19 +1,18 @@
 from dataclasses import dataclass
 
-from earlylock.application.ports import ValorantGateway
+from earlylock.application.ports import GameStateTracker, ValorantGateway
 from earlylock.domain.models import AutoPickSettings, GameState
-from earlylock.infrastructure.riot.tracker import GameTracker
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class GameStateObservation:
     state: GameState
-    tracker: GameTracker
+    tracker: GameStateTracker
     pregame_started: bool = False
     pregame_ended: bool = False
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class PickResult:
     match_found: bool
     selected: bool = False
@@ -24,7 +23,7 @@ class AutoPickService:
     def __init__(
         self,
         gateway: ValorantGateway,
-        tracker: GameTracker,
+        tracker: GameStateTracker,
     ) -> None:
         self._gateway = gateway
         self._tracker = tracker
@@ -36,7 +35,7 @@ class AutoPickService:
 
     def poll_game_state(self) -> GameStateObservation:
         tracker = self._tracker.refresh()
-        state = tracker.get_game_state()
+        state = tracker.state
 
         if state is GameState.PREGAME and not self._pregame_handled:
             self._pregame_handled = True
@@ -58,8 +57,8 @@ class AutoPickService:
 
     def pick_agent(self, settings: AutoPickSettings) -> PickResult:
         tracker = self._tracker.refresh()
-        state = tracker.get_game_state()
-        match_id = tracker.get_match_id()
+        state = tracker.state
+        match_id = tracker.match_id
         if state is not GameState.PREGAME or match_id is None:
             return PickResult(match_found=False)
 

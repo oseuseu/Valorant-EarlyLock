@@ -7,7 +7,7 @@ class LockfileError(RuntimeError):
     pass
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class LockfileCredentials:
     name: str
     pid: int

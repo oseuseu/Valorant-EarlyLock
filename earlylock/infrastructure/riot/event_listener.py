@@ -1,65 +1,40 @@
-import threading
 import time
+from threading import Thread
 
-from typing import Protocol
+from requests import RequestException
 
-from earlylock.infrastructure.riot.api import ValorantApi
 from earlylock.infrastructure.database.name_database import PlayerNameDatabase
-
-class GameEventListener(Protocol):
-    def on_lobby_enter(self) -> None:
-        ...
-
-    def on_pregame_start(self) -> None:
-        ...
-
-    def on_pregame_cancel(self) -> None:
-        ...
-
-    def on_coregame_start(self) -> None:
-        ...
-
-    def on_coregame_end(self, match_id: str) -> None:
-        ...
+from earlylock.infrastructure.riot.api import ValorantApi
 
 
 class EarlyPickGameEventListener:
-    def __init__(self, api: ValorantApi, database: PlayerNameDatabase):
+    MATCH_DETAIL_ATTEMPTS = 10
+    RETRY_DELAY_SECONDS = 1.0
+
+    def __init__(self, api: ValorantApi, database: PlayerNameDatabase) -> None:
         self._api = api
         self._database = database
 
-    def on_lobby_enter(self) -> None:
-        ...
-
-    def on_pregame_start(self) -> None:
-        ...
-
-    def on_pregame_cancel(self) -> None:
-        ...
-
-    def on_coregame_start(self) -> None:
-        ...
-
     def on_coregame_end(self, match_id: str) -> None:
-        threading.Thread(
-            target=self._save_match_players, 
-            args=(match_id,)
+        Thread(
+            target=self._save_match_players,
+            args=(match_id,),
+            daemon=True,
+            name=f"match-name-cache-{match_id}",
         ).start()
 
-    def _save_match_players(self, match_id: str) -> None:
-        save = False
-        for i in range(10):
-            match_detail = self._api.get_match_details(match_id)
-            players = match_detail.get("players", [])
-            puuids = (player['subject'] for player in players)
-            names = self._api.get_player_names(puuids)
-            for name in names:
-                self._database.upsert_player_name(name)
-            if match_detail:
-                save = True
-                break
-            time.sleep(1.0)
-        if not save:
-            print("시간초과")
+    def _save_match_players(self, match_id: str) -> bool:
+        for attempt in range(self.MATCH_DETAIL_ATTEMPTS):
+            try:
+                player_ids = self._api.get_match_player_ids(match_id)
+                if player_ids is not None:
+                    names = self._api.get_player_names(player_ids)
+                    self._database.upsert_player_names(names.values())
+                    return True
+            except RequestException:
+                pass
 
-        
+            if attempt + 1 < self.MATCH_DETAIL_ATTEMPTS:
+                time.sleep(self.RETRY_DELAY_SECONDS)
+
+        return False

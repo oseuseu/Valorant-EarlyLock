@@ -24,6 +24,15 @@ python main.py
 - `earlylock/infrastructure/riot`: lockfile, 인증, VALORANT API 및 게임 추적
 - `earlylock/presentation/qt`: Qt 화면과 Worker
 
+## 검사
+
+VALORANT 클라이언트 없이도 핵심 상태 전환과 응답 변환, 이름 캐시를 검사할 수 있습니다.
+
+```powershell
+python -m unittest discover -s tests -v
+python -m compileall -q earlylock tests main.py
+```
+
 Qt Designer 파일을 수정한 후 생성 코드는 다음 명령으로 갱신합니다.
 
 ```powershell

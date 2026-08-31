@@ -1,12 +1,15 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
+from typing import Literal, Self
+
+Team = Literal["Ally", "Enemy"]
 
 
 class GameState(Enum):
     LOBBY = "lobby"
     PREGAME = "pregame"
     IN_GAME = "in_game"
+
 
 class Agent(Enum):
     GEKKO = ("게코", "e370fa57-4757-3604-3648-499e1f642d3f")
@@ -43,118 +46,51 @@ class Agent(Enum):
         self.display_name = display_name
         self.uuid = uuid
 
+    @classmethod
+    def from_uuid(cls, uuid: object) -> Self | None:
+        if not isinstance(uuid, str) or not uuid:
+            return None
 
-@dataclass(frozen=True)
+        normalized_uuid = uuid.casefold()
+        return next(
+            (agent for agent in cls if agent.uuid.casefold() == normalized_uuid),
+            None,
+        )
+
+
+@dataclass(frozen=True, slots=True)
 class AutoPickSettings:
     agent: Agent
     pick_only: bool
     pick_delay_seconds: float = 6.0
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class PlayerName:
     id: str
     name: str | None
     tag: str | None
 
-class LivePlayerPayload:
-    def __init__(self, data: dict[str: Any]):
-        self._data = data
 
-    @property
-    def data(self) -> dict[str: Any]:
-        return self._data
-
-    @property
-    def puuid(self) -> str:
-        return self._data["Subject"]
-
-    @property
-    def character(self) -> Agent | None:
-        character_id = self._data.get("CharacterID")
-        if character_id:
-            return None
-        for agent in Agent:
-            if agent.uuid == character_id:
-                return agent
-        raise ValueError(f"Unknown agent UUID: {character_id}")
-
-    @property
-    def is_lock(self) -> bool:
-        selection_state = self._data["CharacterSelectionState"]
-        return bool(selection_state)    
-
-class PregameMatchPayload:
-    def __init__(self, data: dict[str: Any]):
-        self._data = data
-
-    @property
-    def data(self) -> dict[str: Any]:
-        return self._data
-
-    @property
-    def id(self) -> str:
-        return self._data["ID"]
-
-    @property
-    def ally_players(self) -> list[LivePlayerPayload]:
-        return (PregameMatchPayload(payload) for payload in self._data["AllyTeam"])
+@dataclass(frozen=True, slots=True)
+class LivePlayer:
+    puuid: str
+    agent: Agent | None
+    is_locked: bool = False
 
 
-class CoregameMatachPayload:
-    def __init__(self, data: dict[str: Any]):
-        self._data = data
+@dataclass(frozen=True, slots=True)
+class LiveMatch:
+    id: str
+    allies: tuple[LivePlayer, ...]
+    enemies: tuple[LivePlayer, ...] = ()
 
-    @property
-    def data(self) -> dict[str: Any]:
-        return self._data
 
-    @property
-    def id(self) -> str:
-        return self._data["ID"]
-
-    @property
-    def ally_players(self) -> list[LivePlayerPayload]:
-        return (PregameMatchPayload(payload) for payload in self._data["AllyTeam"])
-
-    @property
-    def enemy_players(self) -> list[LivePlayerPayload]:
-        return (PregameMatchPayload(payload) for payload in self._data["EnemyTeam"])
-
-class DetailedPlayerPayload:
-    def __init__(self, data: dict[str: Any]):
-        self._data = data
-
-    @property
-    def data(self) -> dict[str: Any]:
-        return self._data
-
-    @property
-    def puuid(self) -> str:
-        return self._data["Subject"]
-
-    @property
-    def character(self) -> Agent | None:
-        character_id = self._data.get("characterId")
-        if character_id:
-            return None
-        for agent in Agent:
-            if agent.uuid == character_id:
-                return agent
-        raise ValueError(f"Unknown agent UUID: {character_id}")
-
-class MatchDetailPayload:
-    def __init__(self, data: dict[str: Any]):
-        self._data = data
-
-    @property
-    def data(self) -> dict[str: Any]:
-        return self._data
-
-    @property
-    def id(self) -> str:
-        return self._data["matchInfo"]["matchId"]
-
-    @property
-    def players(self) -> list[DetailedPlayerPayload]:
-        return (DetailedPlayerPayload(payload) for payload in self._data["players"])
+@dataclass(frozen=True, slots=True)
+class Player:
+    puuid: str
+    name: str | None
+    tag: str | None
+    team: Team
+    agent: Agent | None
+    is_locked: bool = False

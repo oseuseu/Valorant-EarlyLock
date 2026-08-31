@@ -34,17 +34,17 @@ class RiotClient:
         credentials: LockfileCredentials | None = None,
         session: requests.Session | None = None,
     ) -> None:
-        self.region = region
-        self.shard = region
+        self._region = region
+        self._shard = region
         self._session = session or requests.Session()
         self._credentials = credentials or read_lockfile()
 
-        self.local_headers = self._build_local_headers()
-        self._set_base_urls()
+        self._local_headers = self._build_local_headers()
+        self._base_urls = self._build_base_urls()
 
         entitlements = self._get_entitlements()
         self.puuid = entitlements["subject"]
-        self.remote_headers = self._build_remote_headers(entitlements)
+        self._remote_headers = self._build_remote_headers(entitlements)
 
         chat_session = self.fetch("/chat/v1/session", EndpointType.LOCAL)
         self.player_name = chat_session["game_name"]
@@ -63,7 +63,7 @@ class RiotClient:
     def _get_entitlements(self) -> dict[str, Any]:
         response = self._session.get(
             f"{self._credentials.protocol}://127.0.0.1:{self.port}/entitlements/v1/token",
-            headers=self.local_headers,
+            headers=self._local_headers,
             verify=False,
             timeout=self.DEFAULT_TIMEOUT,
         )
@@ -88,16 +88,16 @@ class RiotClient:
         version_number = data["version"].split(".")[3]
         return f"{data['branch']}-shipping-{data['buildVersion']}-{version_number}"
 
-    def _set_base_urls(self) -> None:
-        self._base_urls = {
+    def _build_base_urls(self) -> dict[EndpointType, str]:
+        return {
             EndpointType.LOCAL: (
                 f"{self._credentials.protocol}://127.0.0.1:{self.port}"
             ),
-            EndpointType.PD: f"https://pd.{self.shard}.a.pvp.net",
+            EndpointType.PD: f"https://pd.{self._shard}.a.pvp.net",
             EndpointType.GLZ: (
-                f"https://glz-{self.region}-1.{self.shard}.a.pvp.net"
+                f"https://glz-{self._region}-1.{self._shard}.a.pvp.net"
             ),
-            EndpointType.SHARED: f"https://shared.{self.shard}.a.pvp.net",
+            EndpointType.SHARED: f"https://shared.{self._shard}.a.pvp.net",
         }
 
     def _request(
@@ -116,7 +116,7 @@ class RiotClient:
         response = self._session.request(
             method,
             f"{self._base_urls[endpoint_type]}{endpoint}",
-            headers=self.local_headers if is_local else self.remote_headers,
+            headers=self._local_headers if is_local else self._remote_headers,
             json=json_data,
             verify=not is_local,
             timeout=self.DEFAULT_TIMEOUT,
