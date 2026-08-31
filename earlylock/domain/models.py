@@ -80,7 +80,7 @@ class LivePlayerPayload:
         raise ValueError(f"Unknown agent UUID: {character_id}")
 
     @property
-    def is_selected(self) -> bool:
+    def is_lock(self) -> bool:
         selection_state = self._data["CharacterSelectionState"]
         return bool(selection_state)    
 

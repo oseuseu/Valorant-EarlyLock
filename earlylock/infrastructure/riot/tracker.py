@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Any, Literal, Self
 
-from earlylock.domain.models import Agent, GameState, PlayerName
+from earlylock.domain.models import Agent, GameState, PlayerName, PregameMatchPayload, LivePlayerPayload
 from earlylock.infrastructure.riot.api import ValorantApi
 from earlylock.application.name_resolver import PlayerNameResolver
 from earlylock.infrastructure.riot.event_listener import GameEventListener
@@ -102,20 +102,15 @@ class GameTracker:
 
     def update_from_pregame(
         self,
-        payload: dict[str, Any],
+        payload: PregameMatchPayload,
         match_id: str | None = None,
     ) -> None:
-        ally_team = payload.get("AllyTeam") or {}
-        players = ally_team.get("Players") or []
+        players = payload.ally_players
 
-        puuids = (
-            player.get("Subject")
-            for player in players
-            if isinstance(player, dict)
-        )
+        puuids = (player.puuid for player in players)
         names = self._resolver.resolve_many(puuids)
 
-        ally_players = self._get_players(ally_team, names, "Ally")
+        ally_players = self._get_players(players, names, "Ally")
 
         self._game_state = GameState.PREGAME
         self._match_id = payload.get("ID") or match_id
@@ -197,29 +192,17 @@ class GameTracker:
 
     def _get_players(
         self,
-        payload: dict[str, Any],
+        players: list[LivePlayerPayload],
         names: dict[str, PlayerName],
         team: Team,
     ) -> list[Player]:
-        players = payload.get("Players") or []
         result: list[Player] = []
 
         for player in players:
-            if not isinstance(player, dict):
-                continue
-            puuid = player.get("Subject")
-            if not isinstance(puuid, str) or not puuid:
-                continue
-
+            puuid = player.puuid
             player_name = names.get(puuid)
-
-            agent = self._get_agent(player.get("CharacterID"))
-            selection_state = player.get("CharacterSelectionState")
-            is_lock = (
-                selection_state == "locked"
-                if selection_state is not None
-                else agent is not None
-            )
+            agent = player.character
+            is_lock = player.is_lock
 
             result.append(
                 Player(
@@ -231,7 +214,6 @@ class GameTracker:
                     is_lock=is_lock,
                 )
             )
-
         return result
 
     def _get_agent(self, uuid: str | None) -> Agent | None:

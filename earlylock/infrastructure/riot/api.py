@@ -3,7 +3,7 @@ from typing import Any
 
 from requests import HTTPError
 
-from earlylock.domain.models import Agent, PlayerName
+from earlylock.domain.models import Agent, PlayerName, PregameMatchPayload, CoregameMatachPayload, MatchDetailPayload
 from earlylock.infrastructure.riot.client import EndpointType, RiotClient
 
 
@@ -45,8 +45,11 @@ class ValorantApi:
         player = self.get_pregame_player()
         return player.get("MatchID") if player else None
 
-    def get_pregame_match(self, match_id: str) -> dict[str, Any] | None:
-        return self._fetch_optional(f"/pregame/v1/matches/{match_id}")
+    def get_pregame_match(self, match_id: str) -> PregameMatchPayload | None:
+        payload = self._fetch_optional(f"/pregame/v1/matches/{match_id}")
+        if not payload:
+            return None
+        return PregameMatchPayload(payload)
 
     def get_player_names(self, puuids: Iterable[str]) -> dict[str, PlayerName]:
         unique_puuids = list(dict.fromkeys(puuid for puuid in puuids if puuid))
