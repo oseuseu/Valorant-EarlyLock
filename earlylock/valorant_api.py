@@ -3,8 +3,9 @@ from typing import Any
 
 from requests import HTTPError
 
-from earlylock.domain.models import Agent, LiveMatch, LivePlayer, PlayerName
-from earlylock.infrastructure.riot.client import EndpointType, RiotClient
+from earlylock.models import Agent, LiveMatch, LivePlayer, PlayerName
+from earlylock.name_finder import ValorantNameService
+from earlylock.riot_client import EndpointType, RiotClient
 
 JsonObject = dict[str, Any]
 
@@ -12,8 +13,9 @@ JsonObject = dict[str, Any]
 class ValorantApi:
     NOT_IN_GAME_STATUS_CODES = {400, 404}
 
-    def __init__(self, client: RiotClient) -> None:
+    def __init__(self, client: RiotClient, name_service: ValorantNameService) -> None:
         self._client = client
+        self._name_service = name_service
 
     @property
     def player_name(self) -> str:
@@ -84,25 +86,12 @@ class ValorantApi:
         if not unique_puuids:
             return {}
 
-        payload = self._client.put(
-            "/name-service/v2/players",
-            EndpointType.PD,
-            json_data=unique_puuids,
-        )
-        if not isinstance(payload, list):
-            raise TypeError("Name Service 응답이 JSON array 형식이 아닙니다.")
-
-        names: dict[str, PlayerName] = {}
-        for player in payload:
-            puuid = player.get("Subject")
-            if not isinstance(puuid, str) or not puuid:
-                continue
-            names[puuid] = PlayerName(
-                id=puuid,
-                name=player.get("GameName") or None,
-                tag=player.get("TagLine") or None,
-            )
-        return names
+        return {
+            puuid: PlayerName(puuid, name, tag)
+            for puuid, (name, tag) in self._name_service.get_player_names(
+                unique_puuids
+            ).items()
+        }
 
     def select_agent(self, match_id: str, agent: Agent) -> bool:
         return self._post_successfully(
@@ -128,27 +117,6 @@ class ValorantApi:
             return True
         except HTTPError:
             return False
-
-    def get_match_player_ids(self, match_id: str) -> tuple[str, ...] | None:
-        payload = self._fetch_optional(
-            f"/match-details/v1/matches/{match_id}",
-            EndpointType.PD,
-        )
-        if payload is None:
-            return None
-
-        players = payload.get("players")
-        if not isinstance(players, list):
-            return None
-
-        player_ids = tuple(
-            puuid
-            for player in players
-            if isinstance(player, dict)
-            and isinstance(puuid := player.get("subject"), str)
-            and puuid
-        )
-        return player_ids or None
 
     def close(self) -> None:
         self._client.close()

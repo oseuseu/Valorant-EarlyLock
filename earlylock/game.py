@@ -1,32 +1,23 @@
+from dataclasses import dataclass
 from typing import Self
 
-from earlylock.application.ports import (
-    GameEventListener,
-    GameGateway,
-    PlayerNameLookup,
+from requests import RequestException
+
+from earlylock.models import (
+    AutoPickSettings, GameState, LiveMatch, LivePlayer, Player, PlayerName, Team,
 )
-from earlylock.domain.models import (
-    GameState,
-    LiveMatch,
-    LivePlayer,
-    Player,
-    PlayerName,
-    Team,
-)
+from earlylock.valorant_api import ValorantApi
 
 
 class GameTracker:
     def __init__(
         self,
-        api: GameGateway,
-        resolver: PlayerNameLookup,
-        listener: GameEventListener,
+        api: ValorantApi,
     ) -> None:
         self._api = api
-        self._resolver = resolver
-        self._listener = listener
         self._state = GameState.LOBBY
         self._match_id: str | None = None
+        self._names: dict[str, PlayerName] = {}
         self._players: dict[Team, tuple[Player, ...]] = self._empty_teams()
 
     @property
@@ -85,10 +76,7 @@ class GameTracker:
             )
             return
 
-        ended_match_id = self._match_id
         self._reset()
-        if ended_match_id is not None:
-            self._listener.on_coregame_end(ended_match_id)
 
     def _update_match(
         self,
@@ -98,15 +86,28 @@ class GameTracker:
         if match is None:
             return
 
+        if match.id != self._match_id:
+            self._names.clear()
         live_players = match.allies + match.enemies
-        names = self._resolver.resolve_many(
+        missing = list(dict.fromkeys(
             player.puuid for player in live_players
-        )
+            if player.puuid and player.puuid not in self._names
+        ))
+        if missing:
+            try:
+                names = self._api.get_player_names(missing)
+            except RequestException:
+                # Keep tracking and retry unresolved names on the next poll.
+                names = {}
+            self._names.update(
+                (puuid, name) for puuid, name in names.items()
+                if puuid in missing and name.name and name.tag
+            )
         self._state = state
         self._match_id = match.id
         self._players = {
-            "Ally": self._resolve_players(match.allies, names, "Ally"),
-            "Enemy": self._resolve_players(match.enemies, names, "Enemy"),
+            "Ally": self._resolve_players(match.allies, self._names, "Ally"),
+            "Enemy": self._resolve_players(match.enemies, self._names, "Enemy"),
         }
 
     @staticmethod
@@ -133,8 +134,73 @@ class GameTracker:
     def _reset(self) -> None:
         self._state = GameState.LOBBY
         self._match_id = None
+        self._names.clear()
         self._players = self._empty_teams()
 
     @staticmethod
     def _empty_teams() -> dict[Team, tuple[Player, ...]]:
         return {"Ally": (), "Enemy": ()}
+
+
+@dataclass(frozen=True, slots=True)
+class GameStateObservation:
+    state: GameState
+    tracker: GameTracker
+    pregame_started: bool = False
+    pregame_ended: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class PickResult:
+    match_found: bool
+    selected: bool = False
+    locked: bool | None = None
+
+
+class AutoPickService:
+    def __init__(
+        self,
+        gateway: ValorantApi,
+    ) -> None:
+        self._gateway = gateway
+        self._tracker = GameTracker(gateway)
+        self._pregame_handled = False
+
+    @property
+    def player_display_name(self) -> str:
+        return f"{self._gateway.player_name}#{self._gateway.player_tag}"
+
+    def poll_game_state(self) -> GameStateObservation:
+        tracker = self._tracker.refresh()
+        state = tracker.state
+
+        if state is GameState.PREGAME and not self._pregame_handled:
+            self._pregame_handled = True
+            return GameStateObservation(
+                state=state,
+                tracker=tracker,
+                pregame_started=True,
+            )
+
+        if state is not GameState.PREGAME and self._pregame_handled:
+            self._pregame_handled = False
+            return GameStateObservation(
+                state=state,
+                tracker=tracker,
+                pregame_ended=True,
+            )
+
+        return GameStateObservation(state=state, tracker=tracker)
+
+    def pick_agent(self, settings: AutoPickSettings) -> PickResult:
+        tracker = self._tracker.refresh()
+        state = tracker.state
+        match_id = tracker.match_id
+        if state is not GameState.PREGAME or match_id is None:
+            return PickResult(match_found=False)
+
+        selected = self._gateway.select_agent(match_id, settings.agent)
+        return PickResult(match_found=True, selected=selected)
+
+    def close(self) -> None:
+        self._gateway.close()

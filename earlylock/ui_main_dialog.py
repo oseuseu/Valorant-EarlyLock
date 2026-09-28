@@ -96,4 +96,3 @@ class Ui_Dialog(object):
         self.quitButton.setText(QCoreApplication.translate("Dialog", u"\uac8c\uc784 \ub098\uac00\uae30", None))
         self.pickOnlyCheckBox.setText(QCoreApplication.translate("Dialog", u"pick only", None))
     # retranslateUi
-

@@ -1,9 +1,12 @@
 import unittest
 from typing import Any
+from unittest.mock import Mock
 
-from earlylock.domain.models import Agent
-from earlylock.infrastructure.riot.api import ValorantApi
-from earlylock.infrastructure.riot.client import EndpointType
+from earlylock.models import Agent
+from earlylock.game import GameTracker
+from earlylock.name_finder import ValorantNameService
+from earlylock.valorant_api import ValorantApi
+from earlylock.riot_client import EndpointType
 
 
 class FakeRiotClient:
@@ -19,6 +22,9 @@ class FakeRiotClient:
 
 
 class ValorantApiTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.name_service = Mock(spec=ValorantNameService)
+
     def test_parses_pregame_team_and_selection_state(self) -> None:
         client = FakeRiotClient(
             {
@@ -42,7 +48,7 @@ class ValorantApiTest(unittest.TestCase):
             }
         )
 
-        match = ValorantApi(client).get_pregame_match("pregame-id")
+        match = ValorantApi(client, self.name_service).get_pregame_match("pregame-id")
 
         self.assertIsNotNone(match)
         assert match is not None
@@ -78,7 +84,7 @@ class ValorantApiTest(unittest.TestCase):
             }
         )
 
-        match = ValorantApi(client).get_coregame_match("coregame-id")
+        match = ValorantApi(client, self.name_service).get_coregame_match("coregame-id")
 
         self.assertIsNotNone(match)
         assert match is not None
@@ -92,6 +98,30 @@ class ValorantApiTest(unittest.TestCase):
         )
         self.assertTrue(all(player.is_locked for player in match.allies))
         self.assertTrue(all(player.is_locked for player in match.enemies))
+
+    def test_resolves_hidden_players_by_puuid_through_name_finder(self) -> None:
+        client = FakeRiotClient({
+            "/pregame/v1/players/current-player": {"MatchID": "pregame-id"},
+            "/pregame/v1/matches/pregame-id": {
+                "ID": "pregame-id",
+                "AllyTeam": {"Players": [
+                    {"Subject": "hidden", "PlayerIdentity": {"Incognito": True}},
+                    {"Subject": "visible", "PlayerIdentity": {"Incognito": False}},
+                ]},
+            },
+        })
+        self.name_service.get_player_names.return_value = {
+            "hidden": ("HiddenPlayer", "KR1"),
+            "visible": ("VisiblePlayer", "KR2"),
+        }
+
+        tracker = GameTracker(ValorantApi(client, self.name_service)).refresh()
+
+        self.name_service.get_player_names.assert_called_once_with(["hidden", "visible"])
+        self.assertEqual(
+            [(player.name, player.tag) for player in tracker.players("Ally")],
+            [("HiddenPlayer", "KR1"), ("VisiblePlayer", "KR2")],
+        )
 
 
 if __name__ == "__main__":

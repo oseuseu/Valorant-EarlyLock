@@ -3,24 +3,16 @@ from collections.abc import Sequence
 
 from PySide6.QtWidgets import QApplication
 
-from earlylock.application.auto_pick import AutoPickService
-from earlylock.application.name_resolver import PlayerNameResolver
-from earlylock.infrastructure.database.name_database import PlayerNameDatabase
-from earlylock.infrastructure.riot.api import ValorantApi
-from earlylock.infrastructure.riot.client import RiotClient
-from earlylock.infrastructure.riot.event_listener import EarlyPickGameEventListener
-from earlylock.infrastructure.riot.tracker import GameTracker
-from earlylock.presentation.qt.main_dialog import MainDialog
+from earlylock.game import AutoPickService
+from earlylock.name_finder import ValorantNameService
+from earlylock.riot_client import RiotClient
+from earlylock.ui import MainDialog
+from earlylock.valorant_api import ValorantApi
 
 
 def build_auto_pick_service() -> AutoPickService:
-    client = RiotClient()
-    gateway = ValorantApi(client)
-    database = PlayerNameDatabase()
-    resolver = PlayerNameResolver(gateway, database)
-    listener = EarlyPickGameEventListener(gateway, database)
-    tracker = GameTracker(api=gateway, resolver=resolver, listener=listener)
-    return AutoPickService(gateway, tracker)
+    name_service = ValorantNameService()
+    return AutoPickService(ValorantApi(RiotClient(), name_service))
 
 
 def main(argv: Sequence[str] | None = None) -> int:
